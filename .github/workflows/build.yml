@@ -8,17 +8,17 @@ jobs:
     build:
         runs-on: ubuntu-latest
 
-		steps:
-			-	uses: actions/checkout@v2
-			-	uses: nelonoel/branch-name@v1
+        steps:
+            -   uses: actions/checkout@v2
+            -   uses: nelonoel/branch-name@v1
 
-		  with:
-			dotnet-version: '3.1.x'
-			source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
-		  env:
-			NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
+                with:
+                    dotnet-version: '3.1.x'
+                    source-url: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+                env:
+                    NUGET_AUTH_TOKEN: '%NUGET_AUTH_TOKEN%'
 
-		- name: Publish the package to GPR
-		  run: dotnet nuget push /cs-ijson-microservice.nupkg
-		  env:
-			NUGET_AUTH_TOKEN: ${{ github.token }}
+            -   name: Publish the package to GPR
+                run: dotnet nuget push /cs-ijson-microservice.nupkg
+                env:
+                    NUGET_AUTH_TOKEN: ${{ github.token }}
