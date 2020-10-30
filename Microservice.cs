@@ -18,7 +18,7 @@ namespace cs_ijson_microservice
         private static Microservice myInstance = new Microservice();
         public static Microservice getInstance { get { return myInstance; } }
 
-        private string name = "";
+        private string name;
         private ENVIRONMENT env;
         private ENDPOINTS endpoints;
 
