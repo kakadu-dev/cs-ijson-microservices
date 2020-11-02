@@ -26,6 +26,6 @@ jobs:
             -   name: Add private GitHub registry to NuGet
                 run: nuget sources add -name "cs-ijson-microservice" -Source https://nuget.pkg.github.com/kakadu-dev/index.json -Username kakadu-dev -Password ${{ secrets.GITHUB_TOKEN }}
             -   name: PushGithub
-                run: dotnet nuget push *.nupkg -k ${GITHUB_TOKEN} --source cs-ijson-microservice --no-symbols --skip-duplicate
+                run: dotnet nuget push *.nupkg -k ${GITHUB_TOKEN} --source github --no-symbols --skip-duplicate
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
