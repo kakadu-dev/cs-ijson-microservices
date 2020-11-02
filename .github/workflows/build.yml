@@ -24,6 +24,6 @@ jobs:
             -   name: Pack
                 run: dotnet pack --no-build --configuration Release --output .
             -   name: PushGithub
-                run: dotnet nuget push *.nupkg --no-symbols --skip-duplicate
+                run: dotnet nuget push *.nupkg -k ${{ github.token }} --no-symbols --skip-duplicate
                 env:
                     NUGET_AUTH_TOKEN: ${{ github.token }}
