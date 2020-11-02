@@ -27,4 +27,4 @@ jobs:
             -   name: Pack
                 run: dotnet pack --no-build --configuration Release --output .
             -   name: PushGithub
-                run: dotnet nuget push *.nupkg --source  https://nuget.pkg.github.com/kakadu-dev/cs-ijson-microservices/index.json --skip-duplicate --no-symbols true
+                run: dotnet nuget push *.nupkg --source https://nuget.pkg.github.com/kakadu-dev/index.json --skip-duplicate --no-symbols true
