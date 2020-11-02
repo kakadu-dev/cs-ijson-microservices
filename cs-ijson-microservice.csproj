@@ -3,8 +3,8 @@
   <PropertyGroup>
     <Version>1.0.0</Version>
     <OutputType>Library</OutputType>
-    <PackageId>cs-ijson-microservice</PackageId>
-    <RepositoryUrl>https://github.com/kakadu-dev/cs-ijson-microservice</RepositoryUrl>
+    <PackageId>cs-ijson-microservices</PackageId>
+    <RepositoryUrl>https://github.com/kakadu-dev/cs-ijson-microservices</RepositoryUrl>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>cs_ijson_microservice</RootNamespace>
   </PropertyGroup>

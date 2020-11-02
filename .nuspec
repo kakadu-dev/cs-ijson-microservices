@@ -1,0 +1,18 @@
+﻿<?xml version="1.0"?>
+<package  xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>cs-ijson-microservice</id>
+    <version>1.0.0</version>
+    <title>
+      NET CORE Inverted JSON Microservices
+    </title>
+    <authors>Vitaly Shcherba</authors>
+    <owners>kakadu-dev</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Package for create microservice architecture based on c#. </description>
+    <repository type="git" url="https://github.com/kakadu-dev/cs-ijson-microservices" />
+  </metadata>
+  <files>
+    <file src="readme.md" target="" />
+  </files>
+</package>
