@@ -24,7 +24,7 @@ namespace cs_ijson_microservice
 
         private HttpClient httpClient = new HttpClient();
 
-        public void create(string serviceName, ENVIRONMENT env, ENDPOINTS endpoints)
+        public ENVIRONMENT create(string serviceName, ENVIRONMENT env, ENDPOINTS endpoints)
         {
             this.name = serviceName;
             this.env = new ENVIRONMENT();
@@ -35,11 +35,7 @@ namespace cs_ijson_microservice
             }
 
             this.endpoints = endpoints;
-        }
-
-        public string getDbCredential()
-        {
-            return string.Format("Server={0};Port={1};UserId={2};Password={3};Database={4};", env["MYSQL_HOST"], env["MYSQL_PORT"], env["MYSQL_USER"], env["MYSQL_PASSWORD"], env["MYSQL_DATABASE"]);
+            return this.env;
         }
 
         private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
