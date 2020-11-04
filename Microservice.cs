@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,39 +9,61 @@ using System.Threading.Tasks;
 namespace cs_ijson_microservice
 {
     public delegate void Callback(string action, JToken param);
-    public class ENVIRONMENT : Dictionary<string, string> { }
     public class ENDPOINTS : Dictionary<string, Callback> { }
 
     public sealed class Microservice
     {
         static Microservice() { }
-        private Microservice() { }
+        private Microservice() { 
+            this.endpoints = new ENDPOINTS();
+        }
         private static Microservice myInstance = new Microservice();
         public static Microservice getInstance { get { return myInstance; } }
 
-        private string name;
-        private ENVIRONMENT env;
+        /* microservice endpoints */
         private ENDPOINTS endpoints;
+
+        /* microservice name */
+        private string name { get; set; }
+
+        private string ijsonHost { get; set; }
+
+        /* srv ijson expanded */
+        private bool srvExpand { get; set; }
 
         private HttpClient httpClient = new HttpClient();
 
-        public ENVIRONMENT create(string serviceName, ENVIRONMENT env, ENDPOINTS endpoints)
+        public void create(string name, string ijsonHost)
         {
-            this.name = serviceName;
-            this.env = new ENVIRONMENT();
-            foreach (string key in env.Keys)
-            {
-                string value = Environment.GetEnvironmentVariable(key);
-                this.env.Add(key, (value != null) ? value : env[key]);
-            }
+            this.name = name;
+            this.ijsonHost = ijsonHost;
+        }
+        public void addEndpoint(string path, Callback handler)
+        {
+            this.endpoints.Add(path, handler);
+        }
 
-            this.endpoints = endpoints;
-            return this.env;
+        public void sendServiceRequest(string method, JObject data)
+        {
+            string[] methods = method.Split('.');
+            string service = methods.First();
+            string other = string.Join('.', methods.Skip(1));
+
+            data.Add(new JProperty("payload", 
+                new JObject(
+                        new JProperty("sender", string.Format("{0} (srv)", this.name))
+            )));
+
+            JObject request = new JObject(new []{
+                new JProperty("id", Guid.NewGuid().ToString()),
+                new JProperty("method", other),
+                new JProperty("params", data),
+            });
         }
 
         private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
         {
-            string url = isFirstTask ? ("http://localhost:8001/" + this.name) : "http://localhost:8001/";
+            string url = string.Format("{0}{1}", ijsonHost, isFirstTask ? this.name : string.Empty);
 
             HttpRequestMessage requestMessage = new HttpRequestMessage();
             requestMessage.Headers.Add("type", "worker");
