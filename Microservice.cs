@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using static cs_ijson_microservice.Helpers;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace cs_ijson_microservice
         static Microservice() { }
         private Microservice() { 
             this.endpoints = new ENDPOINTS();
+            this.options = new Options();
         }
         private static Microservice myInstance = new Microservice();
         public static Microservice getInstance { get { return myInstance; } }
@@ -26,21 +28,33 @@ namespace cs_ijson_microservice
         /* microservice name */
         private string name { get; set; }
 
-        private string ijsonHost { get; set; }
+        /* microservice options */
+        private Options options { get; set; }
 
         /* srv ijson expanded */
         private bool srvExpand { get; set; }
 
         private HttpClient httpClient = new HttpClient();
 
-        public void create(string name, string ijsonHost)
+        public void create(string name, Options options)
         {
             this.name = name;
-            this.ijsonHost = ijsonHost;
+            this.options = options;
         }
+
         public void addEndpoint(string path, Callback handler)
         {
             this.endpoints.Add(path, handler);
+        }
+
+        private string getIjsonHost()
+        {
+            if(!this.srvExpand)
+            {
+                this.options.ijson = ExpandSrv(this.options.ijson);
+                this.srvExpand = true;
+            }
+            return this.options.ijson;
         }
 
         public void sendServiceRequest(string method, JObject data)
@@ -59,11 +73,13 @@ namespace cs_ijson_microservice
                 new JProperty("method", other),
                 new JProperty("params", data),
             });
+
+            string jsonHost = this.getIjsonHost();
         }
 
         private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
         {
-            string url = string.Format("{0}{1}", ijsonHost, isFirstTask ? this.name : string.Empty);
+            string url = string.Format("{0}{1}", options.ijson, isFirstTask ? this.name : string.Empty);
 
             HttpRequestMessage requestMessage = new HttpRequestMessage();
             requestMessage.Headers.Add("type", "worker");
