@@ -95,40 +95,38 @@ namespace cs_ijson_microservice
         {
             Console.WriteLine("Microservices: {0} start", this.name);
             httpClient.Timeout = Timeout.InfiniteTimeSpan;
-            HttpRequest request = new HttpRequest(handleClientRequest().Result);
-            JObject responseJObj = new JObject();
 
-            while (true)
+            try
             {
-                if (request.exception != null)
+                JObject requestJObj = HttpRequest(handleClientRequest().Result);
+                JObject responseJObj = new JObject();
+
+                while (true)
                 {
-                    Console.WriteLine(request.exception.Message);
-                    responseJObj = new JObject();
-                    JProperty error = new JProperty("error", request.exception.Message);
-                    responseJObj.Add(error);
-                }
-                else
-                {
-                    JObject requestJObj = request.JObject;
-                    responseJObj = new JObject();
-                    if (requestJObj.ContainsKey("id"))
                     {
-                        responseJObj.Add("id", requestJObj.SelectToken("id"));
-                        JProperty result = new JProperty("result", "this is result");
-                        responseJObj.Add(result);
-                        string method = (string)requestJObj.SelectToken("method");
-                        var posHandlerEnd = method.IndexOf('.');
-                        string handler = method.Substring(0, posHandlerEnd);
-                        string action = method.Substring(posHandlerEnd + 1);
-                        JToken param = requestJObj.SelectToken("params");
+                        responseJObj = new JObject();
+                        if (requestJObj.ContainsKey("id"))
+                        {
+                            responseJObj.Add("id", requestJObj.SelectToken("id"));
+                            JProperty result = new JProperty("result", "this is result");
+                            responseJObj.Add(result);
+                            string method = (string)requestJObj.SelectToken("method");
+                            var posHandlerEnd = method.IndexOf('.');
+                            string handler = method.Substring(0, posHandlerEnd);
+                            string action = method.Substring(posHandlerEnd + 1);
+                            JToken param = requestJObj.SelectToken("params");
 
-                        this.endpoints[handler](action, param);
+                            this.endpoints[handler](action, param);
+                        }
                     }
-                }
 
-                request = new HttpRequest(handleClientRequest(responseJObj, false).Result);
+                    requestJObj = HttpRequest(handleClientRequest(responseJObj, false).Result);
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
-
     }
 }

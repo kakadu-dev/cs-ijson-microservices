@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using DnsClient;
 using DnsClient.Protocol;
+using Newtonsoft.Json.Linq;
 
 namespace cs_ijson_microservice
 {
@@ -24,10 +26,9 @@ namespace cs_ijson_microservice
     }
 
 
-    public class ExpandSrvExeption : Exception
+    public class helpersExeption : Exception
     {
-        public ExpandSrvExeption(string message) : base(message)
-        { }
+        public helpersExeption(string message) : base(message) { }
     }
 
     public class Helpers
@@ -47,11 +48,27 @@ namespace cs_ijson_microservice
             {
                 SrvRecord record = query.Answers.SrvRecords()
                     .OrderBy(record => record.Priority)
-                    .ThenBy(record => record.Weight)
                     .FirstOrDefault();
-                return string.Format("{0}://{1}:{2}", protocol, record.Target.Original, record.Port);
+                string target = record.Target.Original.EndsWith(".") ? 
+                    record.Target.Original.Substring(0, record.Target.Original.Length - 1) : 
+                    record.Target.Original;
+                return string.Format("{0}://{1}:{2}/", protocol, target, record.Port);
             }
-            throw new ExpandSrvExeption(query.ErrorMessage);
+            throw new helpersExeption(query.ErrorMessage);
+        }
+
+        public static JObject HttpRequest(HttpResponseMessage httpResponseMessage)
+        {
+            JObject result = new JObject();
+            try
+            {
+                result  = JObject.Parse(httpResponseMessage.Content.ReadAsStringAsync().Result);
+            }
+            catch (Exception e)
+            {
+                throw new helpersExeption(e.Message);
+            }
+            return result;
         }
     }
 }
