@@ -70,5 +70,24 @@ namespace cs_ijson_microservice
             }
             return result;
         }
+
+        public class MySql
+        {
+            public static string host;
+            public static string port;
+            public static string database;
+            public static string user;
+            public static string password;
+        }
+
+        public class MicroserviceConfig
+        {
+            public MicroserviceConfig()
+            {
+
+            }
+            public MySql mysql;
+        }
+
     }
 }

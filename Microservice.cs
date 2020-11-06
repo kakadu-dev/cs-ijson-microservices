@@ -57,7 +57,7 @@ namespace cs_ijson_microservice
             return this.options.ijson;
         }
 
-        public void sendServiceRequest(string method, JObject data)
+        public JObject sendServiceRequest(string method, JObject data)
         {
             string[] methods = method.Split('.');
             string service = methods.First();
@@ -75,6 +75,8 @@ namespace cs_ijson_microservice
             });
 
             string jsonHost = this.getIjsonHost();
+
+            return request;
         }
 
         private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
