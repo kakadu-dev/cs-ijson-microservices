@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DnsClient;
 using DnsClient.Protocol;
@@ -17,12 +18,12 @@ namespace cs_ijson_microservice
         {
             this.version = version;
             this.env = env;
-            this.ijson = ijson;
+            this.ijson = ijson.EndsWith("/") ? ijson : (ijson + "/");
         }
         public string version { get; set; } = "1.0.0";
         public string env { get; set; } = "development";
         public string ijson { get; set; } = "http://localhost:8001";
-        public int requestTimeout { get; set; } = 1000 * 60 * 5;
+        public TimeSpan requestTimeout { get; set; } = TimeSpan.FromSeconds(60 * 5);
     }
 
 
@@ -71,22 +72,57 @@ namespace cs_ijson_microservice
             return result;
         }
 
-        public class MySql
+        public class MySqlConfig
         {
-            public static string host;
-            public static string port;
-            public static string database;
-            public static string user;
-            public static string password;
+            public MySqlConfig(string host, string port, string database, string user, string password)
+            {
+                Host = host;
+                Port = port;
+                Database = database;
+                User = user;
+                Password = password;
+            }
+            public MySqlConfig(JObject jObject)
+            {
+                if (jObject.ContainsKey("MysqlCredentials"))
+                {
+                    JObject mysqlCredentials = (JObject)jObject.SelectToken("MysqlCredentials[0]");
+                    Host = (string)mysqlCredentials["host"];
+                    Port = (string)mysqlCredentials["port"];
+                    Database = (string)mysqlCredentials["database"];
+                    User = (string)mysqlCredentials["user"];
+                    Password = (string)mysqlCredentials["password"];
+                }
+            }
+            public string Host;
+            public string Port;
+            public string Database;
+            public string User;
+            public string Password;
+            public string getStringConnection { 
+                get {
+                    return string.Format("Server={0};Port={1};UserId={2};Password={3};Database={4};", Host, Port, User, Password, Database);
+                } 
+            }
         }
 
         public class MicroserviceConfig
         {
-            public MicroserviceConfig()
+            public MicroserviceConfig() { }
+            public MicroserviceConfig(MySqlConfig defaultMySql)
             {
-
+                this.mysql = defaultMySql;
             }
-            public MySql mysql;
+            public MicroserviceConfig(JObject jObject)
+            {
+                if (jObject.ContainsKey("result"))
+                {
+                    JObject result = (JObject)jObject.SelectToken("result.model");
+                    this.mysql = new MySqlConfig(result);
+                }
+            }
+            public MySqlConfig mysql;
+            public bool hasAuthorization;
         }
 
     }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace cs_ijson_microservice
 {
@@ -34,7 +35,7 @@ namespace cs_ijson_microservice
         /* srv ijson expanded */
         private bool srvExpand { get; set; }
 
-        private HttpClient httpClient = new HttpClient();
+        private HttpClient httpClient;
 
         public void create(string name, Options options)
         {
@@ -68,21 +69,41 @@ namespace cs_ijson_microservice
                         new JProperty("sender", string.Format("{0} (srv)", this.name))
             )));
 
+            string guid = Guid.NewGuid().ToString();
+
             JObject request = new JObject(new []{
-                new JProperty("id", Guid.NewGuid().ToString()),
+                new JProperty("id", guid),
                 new JProperty("method", other),
                 new JProperty("params", data),
             });
 
             string jsonHost = this.getIjsonHost();
 
+            Console.WriteLine("    --> Request ({0} - {1}): {2}", service, guid, JsonConvert.SerializeObject(request));
+            request = HttpRequest(handleClientRequest(jsonHost + service, request).Result);
+            Console.WriteLine("    <-- Response ({0} - {1}): {2}", service, guid, JsonConvert.SerializeObject(request));
+            httpClient.Dispose();
+
             return request;
+        }
+
+
+        private async Task<HttpResponseMessage> handleClientRequest(string path, JObject json)
+        {
+            httpClient = new HttpClient();
+            HttpRequestMessage requestMessage = new HttpRequestMessage();
+            requestMessage.Method = HttpMethod.Post;
+            requestMessage.RequestUri = new Uri(path);
+            httpClient.Timeout = this.options.requestTimeout;
+            requestMessage.Content = new StringContent((json != null) ?
+                new JObject(json).ToString() :
+                "{}", System.Text.Encoding.UTF8, "application/json");
+            return await httpClient.SendAsync(requestMessage);
         }
 
         private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
         {
             string url = string.Format("{0}{1}", options.ijson, isFirstTask ? this.name : string.Empty);
-
             HttpRequestMessage requestMessage = new HttpRequestMessage();
             requestMessage.Headers.Add("type", "worker");
             requestMessage.Method = HttpMethod.Post;
@@ -96,10 +117,11 @@ namespace cs_ijson_microservice
         public void start()
         {
             Console.WriteLine("Microservices: {0} start", this.name);
-            httpClient.Timeout = Timeout.InfiniteTimeSpan;
 
             try
             {
+                httpClient = new HttpClient();
+                httpClient.Timeout = Timeout.InfiniteTimeSpan;
                 JObject requestJObj = HttpRequest(handleClientRequest().Result);
                 JObject responseJObj = new JObject();
 
