@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using DnsClient;
 using DnsClient.Protocol;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace cs_ijson_microservice
 {
+    public delegate JObject Callback(string action, JObject param);
     public class Options
     {
         public Options() { }
@@ -109,21 +112,50 @@ namespace cs_ijson_microservice
         public class MicroserviceConfig
         {
             public MicroserviceConfig() { }
-            public MicroserviceConfig(MySqlConfig defaultMySql)
+            public MicroserviceConfig(MySqlConfig defaultMySql, string authAlias)
             {
                 this.mysql = defaultMySql;
+                this.authAlias = authAlias;
             }
-            public MicroserviceConfig(JObject jObject)
+
+            public void addObject(JObject jObject)
             {
                 if (jObject.ContainsKey("result"))
                 {
                     JObject result = (JObject)jObject.SelectToken("result.model");
                     this.mysql = new MySqlConfig(result);
+                    JObject services = (JObject)result["Services"][0];
+                    if (services.ContainsKey("alias"))
+                    {
+                        this.hasAuthorization = ((string)services["alias"] == authAlias) ? true : false;
+                    }
                 }
             }
             public MySqlConfig mysql;
             public bool hasAuthorization;
+            private string authAlias;
         }
 
+    }
+
+    public class LogsDriver
+    {
+        public class TYPE
+        {
+            public const string Response    = "    <-- Response";
+            public const string Request     = "    --> Request";
+            public const string Error       = "    ERROR";
+        }
+        private string serviceName;
+
+        public LogsDriver(string serviceName)
+        {
+            this.serviceName = serviceName;
+        }
+        public void Write(string type, JObject jObject)
+        {
+            string id = (string)jObject["id"];
+            Console.WriteLine("{0} ({1}) : {2}", type, id, JsonConvert.SerializeObject(jObject));
+        }
     }
 }

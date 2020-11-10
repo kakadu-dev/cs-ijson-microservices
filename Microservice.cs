@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 
 namespace cs_ijson_microservice
 {
-    public delegate void Callback(string action, JToken param);
     public class ENDPOINTS : Dictionary<string, Callback> { }
 
     public sealed class Microservice
@@ -37,10 +36,15 @@ namespace cs_ijson_microservice
 
         private HttpClient httpClient;
 
+        public Callback worker { get; set; }
+
+        private LogsDriver logsDriver;
+
         public void create(string name, Options options)
         {
             this.name = name;
             this.options = options;
+            logsDriver = new LogsDriver(this.name);
         }
 
         public void addEndpoint(string path, Callback handler)
@@ -108,48 +112,54 @@ namespace cs_ijson_microservice
             requestMessage.Headers.Add("type", "worker");
             requestMessage.Method = HttpMethod.Post;
             requestMessage.RequestUri = new Uri(url);
-            requestMessage.Content = new StringContent((json != null) ?
-                new JObject(json).ToString() :
-                "{}", System.Text.Encoding.UTF8, "application/json");
+            if (json != null)
+            {
+                requestMessage.Content = new StringContent(json.ToString(), System.Text.Encoding.UTF8, "application/json");
+                logsDriver.Write(LogsDriver.TYPE.Request, json);
+            }
             return await httpClient.SendAsync(requestMessage);
         }
 
         public void start()
         {
             Console.WriteLine("Microservices: {0} start", this.name);
-
+            httpClient = new HttpClient();
+            httpClient.Timeout = Timeout.InfiniteTimeSpan;
+            JObject requestJObj = new JObject();
+            JObject responseJObj = new JObject();
             try
             {
-                httpClient = new HttpClient();
-                httpClient.Timeout = Timeout.InfiniteTimeSpan;
-                JObject requestJObj = HttpRequest(handleClientRequest().Result);
-                JObject responseJObj = new JObject();
-
-                while (true)
-                {
-                    {
-                        responseJObj = new JObject();
-                        if (requestJObj.ContainsKey("id"))
-                        {
-                            responseJObj.Add("id", requestJObj.SelectToken("id"));
-                            JProperty result = new JProperty("result", "this is result");
-                            responseJObj.Add(result);
-                            string method = (string)requestJObj.SelectToken("method");
-                            var posHandlerEnd = method.IndexOf('.');
-                            string handler = method.Substring(0, posHandlerEnd);
-                            string action = method.Substring(posHandlerEnd + 1);
-                            JToken param = requestJObj.SelectToken("params");
-
-                            this.endpoints[handler](action, param);
-                        }
-                    }
-
-                    requestJObj = HttpRequest(handleClientRequest(responseJObj, false).Result);
-                }
+                requestJObj = HttpRequest(handleClientRequest().Result);
+                logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
+            }
+            while (true)
+            {
+                try
+                {
+                    responseJObj = new JObject();
+                    if (requestJObj.ContainsKey("id"))
+                    {
+                        responseJObj.Add("id", requestJObj.SelectToken("id"));
+                        JProperty result = new JProperty("result", "this is result");
+                        responseJObj.Add(result);
+                        string method = (string)requestJObj.SelectToken("method");
+                        JObject param = (JObject)requestJObj.SelectToken("params");
+                        this.worker(method, param);
+                    }
+                    requestJObj = HttpRequest(handleClientRequest(responseJObj, false).Result);
+                    logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
+                }
+                catch(Exception e)
+                {
+                    string id = (string)requestJObj["id"];
+                    ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
+                    requestJObj = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
+                }
+                
             }
         }
     }
