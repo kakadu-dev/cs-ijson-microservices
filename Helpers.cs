@@ -127,7 +127,7 @@ namespace cs_ijson_microservice
                     JObject services = (JObject)result["Services"][0];
                     if (services.ContainsKey("alias"))
                     {
-                        this.hasAuthorization = ((string)services["alias"] == authAlias) ? true : false;
+                        this.hasAuthorization = ((string)services["alias"] == authAlias) ? true : this.hasAuthorization;
                     }
                 }
             }

@@ -8,40 +8,54 @@
 Installation
 ------------
 
-The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
-
 Either run
 
 ```
-composer require --prefer-dist kakadu-dev/php-ijson-microservices "*"
+dotnet add package cs-ijson-microservices -s https://nuget.pkg.github.com/kakadu-dev/index.json
 ```
 
-or add
+or
 
 ```
-"kakadu-dev/php-ijson-microservices": "@dev"
+dotnet restore
 ```
-
-to the require section of your `composer.json` file.
 
 Usage
 -----
 
 Example microservice:
-```php
-use Kakadu\Microservices\Microservice;
+```c#
+using cs_ijson_microservice;
+using static cs_ijson_microservice.Helpers;
 
-$app = Microservice::create('my-microservice', [
-    'ijson' => 'http://127.0.0.1:8001',
-    'env'   => 'dev',
-], true);
+static void Main(string[] args)
+{
+    //create options for microservices
+    Options options = new Options("1.0.0", APP_ENV, IJSON_HOST, 1000 * 60 * 5);
+    // create microservices
+    Microservice.getInstance.create(
+                string.Format("{0}:{1}", PROJECT_ALIAS, SERVICE_NAME), options);
 
-$app->start(function ($method, $params) {
-    // Run method with params
-    // Return result
+    // configure microservices
+    MicroserviceConfig microserviceConfig = Configure();
+    
+    // configure database
+    DatabaseContext database = new Program().CreateDbContext(
+                new string[] {microserviceConfig.mysql.getStringConnection});
 
-    return ['hello' => 'world'];
-});
+    // database check migration
+    database.Database.Migrate();
+
+    // create handler
+    handler = new Handler(database);
+
+    //add worker to microservices
+    Microservice.getInstance.worker = handler.Worker;
+
+    // start microservices
+    Microservice.getInstance.start();
+}
+
 ```
 
 Start Inverted JSON:
