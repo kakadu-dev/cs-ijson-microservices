@@ -13,7 +13,7 @@ using Newtonsoft.Json.Linq;
 
 namespace cs_ijson_microservice
 {
-    public delegate JObject Callback(string action, JObject param);
+    public delegate JProperty Callback(string action, JObject param);
     public class Options
     {
         public Options() { }

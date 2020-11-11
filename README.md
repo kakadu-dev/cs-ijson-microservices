@@ -1,4 +1,4 @@
-# NET CORE Inverted JSON Microservices
+# .NET Core Inverted JSON Microservices
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kakadu-dev/cs-ijson-microservices)
 

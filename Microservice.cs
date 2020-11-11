@@ -144,11 +144,9 @@ namespace cs_ijson_microservice
                     if (requestJObj.ContainsKey("id"))
                     {
                         responseJObj.Add("id", requestJObj.SelectToken("id"));
-                        JProperty result = new JProperty("result", "this is result");
-                        responseJObj.Add(result);
                         string method = (string)requestJObj.SelectToken("method");
                         JObject param = (JObject)requestJObj.SelectToken("params");
-                        this.worker(method, param);
+                        responseJObj.Add(this.worker(method, param));
                     }
                     requestJObj = HttpRequest(handleClientRequest(responseJObj, false).Result);
                     logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
