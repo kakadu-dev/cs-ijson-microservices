@@ -37,6 +37,19 @@ namespace cs_ijson_microservice
 
     public class Helpers
     {
+
+        public class MjRequest
+        {
+            public bool isError { get; set; } = false;
+            public JObject request { get; set; }
+            public string invalidJson { get; set; }
+            public string errorMessages { get; set; }
+
+            public MjRequest()
+            {
+
+            }
+        }
         public static string ExpandSrv(string host)
         {
             if (!host.EndsWith(".srv"))
@@ -61,16 +74,19 @@ namespace cs_ijson_microservice
             throw new helpersExeption(query.ErrorMessage);
         }
 
-        public static JObject HttpRequest(HttpResponseMessage httpResponseMessage)
+        public static MjRequest HttpRequest(HttpResponseMessage httpResponseMessage)
         {
-            JObject result = new JObject();
+            MjRequest result = new MjRequest();
+            string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
             try
             {
-                result  = JObject.Parse(httpResponseMessage.Content.ReadAsStringAsync().Result);
+                result.request = JObject.Parse(content);
             }
             catch (Exception e)
             {
-                throw new helpersExeption(e.Message);
+                result.isError = true;
+                result.errorMessages = e.Message;
+                result.invalidJson = content.Replace("\n", "").Replace("\r", "");
             }
             return result;
         }
@@ -156,6 +172,10 @@ namespace cs_ijson_microservice
         {
             string id = (string)jObject["id"];
             Console.WriteLine("{0} ({1}) : {2}", type, id, JsonConvert.SerializeObject(jObject));
+        }
+        public void Write(string type, string errorMessages)
+        {
+            Console.WriteLine("{0} : {1}", type, errorMessages);
         }
     }
 }

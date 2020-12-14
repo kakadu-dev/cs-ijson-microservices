@@ -84,7 +84,15 @@ namespace cs_ijson_microservice
             string jsonHost = this.getIjsonHost();
 
             Console.WriteLine("    --> Request ({0} - {1}): {2}", service, guid, JsonConvert.SerializeObject(request));
-            request = HttpRequest(handleClientRequest(jsonHost + service, request).Result);
+            MjRequest mjRequest = HttpRequest(handleClientRequest(jsonHost + service, request).Result);
+            if (!mjRequest.isError)
+            {
+                request = mjRequest.request;
+            }
+            else
+            {
+                logsDriver.Write(LogsDriver.TYPE.Error, mjRequest.errorMessages);
+            }
             Console.WriteLine("    <-- Response ({0} - {1}): {2}", service, guid, JsonConvert.SerializeObject(request));
             httpClient.Dispose();
 
@@ -125,12 +133,12 @@ namespace cs_ijson_microservice
             Console.WriteLine("Microservices: {0} start", this.name);
             httpClient = new HttpClient();
             httpClient.Timeout = Timeout.InfiniteTimeSpan;
-            JObject requestJObj = new JObject();
+            MjRequest mjRequest = new MjRequest();
+            //JObject requestJObj = new JObject();
             JObject responseJObj = new JObject();
             try
             {
-                requestJObj = HttpRequest(handleClientRequest().Result);
-                logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
+                mjRequest = HttpRequest(handleClientRequest().Result);
             }
             catch (Exception e)
             {
@@ -140,22 +148,64 @@ namespace cs_ijson_microservice
             {
                 try
                 {
-                    responseJObj = new JObject();
-                    if (requestJObj.ContainsKey("id"))
+                    if (!mjRequest.isError)
                     {
-                        responseJObj.Add("id", requestJObj.SelectToken("id"));
-                        string method = (string)requestJObj.SelectToken("method");
-                        JObject param = (JObject)requestJObj.SelectToken("params");
-                        responseJObj.Add(this.worker(method, param));
+                        logsDriver.Write(LogsDriver.TYPE.Response, mjRequest.request);
+                        responseJObj = new JObject();
+                        if (mjRequest.request.ContainsKey("id"))
+                        {
+                            responseJObj.Add("id", mjRequest.request.SelectToken("id"));
+                            string method = (string)mjRequest.request.SelectToken("method");
+                            JObject param = (JObject)mjRequest.request.SelectToken("params");
+                            responseJObj.Add(this.worker(method, param));
+                        }
+                        mjRequest = HttpRequest(handleClientRequest(responseJObj, false).Result);
                     }
-                    requestJObj = HttpRequest(handleClientRequest(responseJObj, false).Result);
-                    logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
+                    else
+                    {
+                        logsDriver.Write(LogsDriver.TYPE.Response, mjRequest.invalidJson);
+                        ResponseError responseError = new ResponseError("0", new ResponseError.Error(this.name, mjRequest.errorMessages));
+                        mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
+                    }
+
+                    //responseJObj = new JObject();
+                    //if (requestJObj.ContainsKey("id"))
+                    //{
+                    //    responseJObj.Add("id", requestJObj.SelectToken("id"));
+                    //    string method = (string)requestJObj.SelectToken("method");
+                    //    JObject param = (JObject)requestJObj.SelectToken("params");
+                    //    responseJObj.Add(this.worker(method, param));
+                    //}
+                    //mjRequest = HttpRequest(handleClientRequest(responseJObj, false).Result);
+                    //if (!mjRequest.isError)
+                    //{
+                    //    requestJObj = mjRequest.request;
+                    //    logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
+                    //}
+                    //else
+                    //{
+                    //    throw new Exception(mjRequest.errorMessages);
+                    //}
                 }
                 catch(Exception e)
                 {
-                    string id = (string)requestJObj["id"];
-                    ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
-                    requestJObj = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
+                    if (!mjRequest.isError)
+                    {
+                        string id = (string)mjRequest.request["id"];
+                        ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
+                        mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
+                    }
+
+                    //    string id = (string)requestJObj["id"];
+                    //ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
+
+                    //mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
+                    //if(!mjRequest.isError)
+                    //{
+                    //    requestJObj = mjRequest.request;
+                    //    logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
+                    //}
+                    
                 }
                 
             }
