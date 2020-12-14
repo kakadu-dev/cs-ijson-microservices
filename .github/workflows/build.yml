@@ -10,8 +10,8 @@ jobs:
 
         steps:
             -   uses: actions/checkout@v2
-            -   uses: nelonoel/branch-name@v1
-            -   uses: actions/setup-dotnet@v1.5.0
+            -   uses: nelonoel/branch-name@v1.0.1
+            -   uses: actions/setup-dotnet@v1.7.2
                 with:
                     dotnet-version: 3.1.301
                     source-url: https://nuget.pkg.github.com/kakadu-dev/index.json
