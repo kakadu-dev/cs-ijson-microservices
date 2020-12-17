@@ -130,11 +130,12 @@ namespace cs_ijson_microservice
 
         public void start()
         {
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Microservices: {0} start", this.name);
+            Console.ResetColor();
             httpClient = new HttpClient();
             httpClient.Timeout = Timeout.InfiniteTimeSpan;
             MjRequest mjRequest = new MjRequest();
-            //JObject requestJObj = new JObject();
             JObject responseJObj = new JObject();
             try
             {
@@ -155,8 +156,17 @@ namespace cs_ijson_microservice
                         if (mjRequest.request.ContainsKey("id"))
                         {
                             responseJObj.Add("id", mjRequest.request.SelectToken("id"));
-                            string method = (string)mjRequest.request.SelectToken("method");
-                            JObject param = (JObject)mjRequest.request.SelectToken("params");
+
+                            string method = "undefined";
+                            JObject param = new JObject();
+                            if (mjRequest.request.ContainsKey("method"))
+                            {
+                                method = (string)mjRequest.request.SelectToken("method");
+                            }
+                            if (mjRequest.request.ContainsKey("params"))
+                            {
+                                param = (JObject)mjRequest.request.SelectToken("params");
+                            }
                             responseJObj.Add(this.worker(method, param));
                         }
                         mjRequest = HttpRequest(handleClientRequest(responseJObj, false).Result);
@@ -167,25 +177,6 @@ namespace cs_ijson_microservice
                         ResponseError responseError = new ResponseError("0", new ResponseError.Error(this.name, mjRequest.errorMessages));
                         mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
                     }
-
-                    //responseJObj = new JObject();
-                    //if (requestJObj.ContainsKey("id"))
-                    //{
-                    //    responseJObj.Add("id", requestJObj.SelectToken("id"));
-                    //    string method = (string)requestJObj.SelectToken("method");
-                    //    JObject param = (JObject)requestJObj.SelectToken("params");
-                    //    responseJObj.Add(this.worker(method, param));
-                    //}
-                    //mjRequest = HttpRequest(handleClientRequest(responseJObj, false).Result);
-                    //if (!mjRequest.isError)
-                    //{
-                    //    requestJObj = mjRequest.request;
-                    //    logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
-                    //}
-                    //else
-                    //{
-                    //    throw new Exception(mjRequest.errorMessages);
-                    //}
                 }
                 catch(Exception e)
                 {
@@ -195,17 +186,6 @@ namespace cs_ijson_microservice
                         ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
                         mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
                     }
-
-                    //    string id = (string)requestJObj["id"];
-                    //ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
-
-                    //mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
-                    //if(!mjRequest.isError)
-                    //{
-                    //    requestJObj = mjRequest.request;
-                    //    logsDriver.Write(LogsDriver.TYPE.Response, requestJObj);
-                    //}
-                    
                 }
                 
             }

@@ -170,12 +170,19 @@ namespace cs_ijson_microservice
         }
         public void Write(string type, JObject jObject)
         {
-            string id = (string)jObject["id"];
+            string id = "0";
+            if(jObject.ContainsKey("id"))
+                id = (string)jObject["id"];
+
             Console.WriteLine("{0} ({1}) : {2}", type, id, JsonConvert.SerializeObject(jObject));
         }
         public void Write(string type, string errorMessages)
         {
+            if(type == TYPE.Error)
+                Console.ForegroundColor = ConsoleColor.Red;
+
             Console.WriteLine("{0} : {1}", type, errorMessages);
+            Console.ResetColor();
         }
     }
 }

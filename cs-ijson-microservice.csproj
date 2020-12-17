@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <OutputType>Library</OutputType>
     <PackageId>cs-ijson-microservices</PackageId>
     <RepositoryUrl>https://github.com/kakadu-dev/cs-ijson-microservices</RepositoryUrl>
