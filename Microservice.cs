@@ -36,6 +36,8 @@ namespace cs_ijson_microservice
 
         private HttpClient httpClient;
 
+        private HttpClient httpClientMicroservice;
+
         public Callback worker { get; set; }
 
         private LogsDriver logsDriver;
@@ -94,7 +96,7 @@ namespace cs_ijson_microservice
                 logsDriver.Write(LogsDriver.TYPE.Error, mjRequest.errorMessages);
             }
             Console.WriteLine("    <-- Response ({0} - {1}): {2}", service, guid, JsonConvert.SerializeObject(request));
-            httpClient.Dispose();
+            httpClientMicroservice.Dispose();
 
             return request;
         }
@@ -102,15 +104,15 @@ namespace cs_ijson_microservice
 
         private async Task<HttpResponseMessage> handleClientRequest(string path, JObject json)
         {
-            httpClient = new HttpClient();
+            httpClientMicroservice = new HttpClient();
             HttpRequestMessage requestMessage = new HttpRequestMessage();
             requestMessage.Method = HttpMethod.Post;
             requestMessage.RequestUri = new Uri(path);
-            httpClient.Timeout = this.options.requestTimeout;
+            httpClientMicroservice.Timeout = this.options.requestTimeout;
             requestMessage.Content = new StringContent((json != null) ?
                 new JObject(json).ToString() :
                 "{}", System.Text.Encoding.UTF8, "application/json");
-            return await httpClient.SendAsync(requestMessage);
+            return await httpClientMicroservice.SendAsync(requestMessage);
         }
 
         private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
