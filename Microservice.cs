@@ -70,9 +70,9 @@ namespace cs_ijson_microservice
             string service = methods.First();
             string other = string.Join('.', methods.Skip(1));
 
-            data.Add(new JProperty("payload", 
+            data.Merge(new JProperty("payload",
                 new JObject(
-                        new JProperty("sender", string.Format("{0} (srv)", this.name))
+                    new JProperty("sender", string.Format("{0} (srv)", this.name))
             )));
 
             string guid = Guid.NewGuid().ToString();
