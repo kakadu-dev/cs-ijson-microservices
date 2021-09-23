@@ -182,6 +182,7 @@ namespace cs_ijson_microservice
                 }
                 catch(Exception e)
                 {
+                    Console.WriteLine(" --- Exception: " + e);
                     if (!mjRequest.isError)
                     {
                         string id = (string)mjRequest.request["id"];
