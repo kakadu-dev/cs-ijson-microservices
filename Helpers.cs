@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Runtime.CompilerServices;
-using System.Text;
-using DnsClient;
+﻿using DnsClient;
 using DnsClient.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Linq;
+using System.Net.Http;
 
 namespace cs_ijson_microservice
 {
@@ -60,14 +55,14 @@ namespace cs_ijson_microservice
             string protocol = hostSplits.First();
             string domain = hostSplits.Last();
 
-            var query = new LookupClient().Query(domain.Replace(".srv", ""), QueryType.SRV);
+            IDnsQueryResponse query = new LookupClient().Query(domain.Replace(".srv", ""), QueryType.SRV);
             if (!query.HasError)
             {
                 SrvRecord record = query.Answers.SrvRecords()
                     .OrderBy(record => record.Priority)
                     .FirstOrDefault();
-                string target = record.Target.Original.EndsWith(".") ? 
-                    record.Target.Original.Substring(0, record.Target.Original.Length - 1) : 
+                string target = record.Target.Original.EndsWith(".") ?
+                    record.Target.Original[0..^1] :
                     record.Target.Original;
                 return string.Format("{0}://{1}:{2}/", protocol, target, record.Port);
             }
@@ -118,11 +113,7 @@ namespace cs_ijson_microservice
             public string Database;
             public string User;
             public string Password;
-            public string getStringConnection { 
-                get {
-                    return string.Format("Server={0};Port={1};UserId={2};Password={3};Database={4};", Host, Port, User, Password, Database);
-                } 
-            }
+            public string getStringConnection => string.Format("Server={0};Port={1};UserId={2};Password={3};Database={4};", Host, Port, User, Password, Database);
         }
 
         public class MicroserviceConfig
@@ -130,7 +121,7 @@ namespace cs_ijson_microservice
             public MicroserviceConfig() { }
             public MicroserviceConfig(MySqlConfig defaultMySql, string authAlias)
             {
-                this.mysql = defaultMySql;
+                mysql = defaultMySql;
                 this.authAlias = authAlias;
             }
 
@@ -139,17 +130,17 @@ namespace cs_ijson_microservice
                 if (jObject.ContainsKey("result"))
                 {
                     JObject result = (JObject)jObject.SelectToken("result.model");
-                    this.mysql = new MySqlConfig(result);
+                    mysql = new MySqlConfig(result);
                     JObject services = (JObject)result["Services"][0];
                     if (services.ContainsKey("alias"))
                     {
-                        this.hasAuthorization = ((string)services["alias"] == authAlias) ? true : this.hasAuthorization;
+                        hasAuthorization = ((string)services["alias"] == authAlias) || hasAuthorization;
                     }
                 }
             }
             public MySqlConfig mysql;
             public bool hasAuthorization;
-            private string authAlias;
+            private readonly string authAlias;
         }
 
     }
@@ -158,11 +149,11 @@ namespace cs_ijson_microservice
     {
         public class TYPE
         {
-            public const string Response    = "    <-- Response";
-            public const string Request     = "    --> Request";
-            public const string Error       = "    ERROR";
+            public const string Response = "    <-- Response";
+            public const string Request = "    --> Request";
+            public const string Error = "    ERROR";
         }
-        private string serviceName;
+        private readonly string serviceName;
 
         public LogsDriver(string serviceName)
         {
@@ -171,17 +162,21 @@ namespace cs_ijson_microservice
         public void Write(string type, JObject jObject)
         {
             string id = "0";
-            if(jObject.ContainsKey("id"))
+            if (jObject.ContainsKey("id"))
+            {
                 id = (string)jObject["id"];
+            }
 
-            Console.WriteLine("{0} ({1}) : {2}", type, id, JsonConvert.SerializeObject(jObject));
+            Console.WriteLine("{0} ({1}): {2}", type, id, JsonConvert.SerializeObject(jObject));
         }
         public void Write(string type, string errorMessages)
         {
-            if(type == TYPE.Error)
+            if (type == TYPE.Error)
+            {
                 Console.ForegroundColor = ConsoleColor.Red;
+            }
 
-            Console.WriteLine("{0} : {1}", type, errorMessages);
+            Console.WriteLine("{0}: {1}", type, errorMessages);
             Console.ResetColor();
         }
     }
