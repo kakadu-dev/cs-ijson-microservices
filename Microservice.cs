@@ -1,4 +1,4 @@
-﻿using static cs_ijson_microservice.Helpers;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using static cs_ijson_microservice.Helpers;
 
 namespace cs_ijson_microservice
 {
@@ -15,15 +15,16 @@ namespace cs_ijson_microservice
     public sealed class Microservice
     {
         static Microservice() { }
-        private Microservice() { 
-            this.endpoints = new ENDPOINTS();
-            this.options = new Options();
+        private Microservice()
+        {
+            endpoints = new ENDPOINTS();
+            options = new Options();
         }
-        private static Microservice myInstance = new Microservice();
-        public static Microservice getInstance { get { return myInstance; } }
+        private static readonly Microservice myInstance = new Microservice();
+        public static Microservice getInstance => myInstance;
 
         /* microservice endpoints */
-        private ENDPOINTS endpoints;
+        private readonly ENDPOINTS endpoints;
 
         /* microservice name */
         private string name { get; set; }
@@ -51,17 +52,17 @@ namespace cs_ijson_microservice
 
         public void addEndpoint(string path, Callback handler)
         {
-            this.endpoints.Add(path, handler);
+            endpoints.Add(path, handler);
         }
 
         private string getIjsonHost()
         {
-            if(!this.srvExpand)
+            if (!srvExpand)
             {
-                this.options.ijson = ExpandSrv(this.options.ijson);
-                this.srvExpand = true;
+                options.ijson = ExpandSrv(options.ijson);
+                srvExpand = true;
             }
-            return this.options.ijson;
+            return options.ijson;
         }
 
         public JObject sendServiceRequest(string method, JObject data)
@@ -72,18 +73,18 @@ namespace cs_ijson_microservice
 
             data.Merge(new JProperty("payload",
                 new JObject(
-                    new JProperty("sender", string.Format("{0} (srv)", this.name))
+                    new JProperty("sender", string.Format("{0} (srv)", name))
             )));
 
             string guid = Guid.NewGuid().ToString();
 
-            JObject request = new JObject(new []{
+            JObject request = new JObject(new[]{
                 new JProperty("id", guid),
                 new JProperty("method", other),
                 new JProperty("params", data),
             });
 
-            string jsonHost = this.getIjsonHost();
+            string jsonHost = getIjsonHost();
 
             Console.WriteLine("    --> Request ({0} - {1}): {2}", service, guid, JsonConvert.SerializeObject(request));
             MjRequest mjRequest = HttpRequest(handleClientRequest(jsonHost + service, request).Result);
@@ -105,19 +106,21 @@ namespace cs_ijson_microservice
         private async Task<HttpResponseMessage> handleClientRequest(string path, JObject json)
         {
             httpClientMicroservice = new HttpClient();
-            HttpRequestMessage requestMessage = new HttpRequestMessage();
-            requestMessage.Method = HttpMethod.Post;
-            requestMessage.RequestUri = new Uri(path);
-            httpClientMicroservice.Timeout = this.options.requestTimeout;
+            HttpRequestMessage requestMessage = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(path)
+            };
+            httpClientMicroservice.Timeout = options.requestTimeout;
             requestMessage.Content = new StringContent((json != null) ?
                 new JObject(json).ToString() :
                 "{}", System.Text.Encoding.UTF8, "application/json");
             return await httpClientMicroservice.SendAsync(requestMessage);
         }
 
-        private async Task<HttpResponseMessage> handleClientRequest(JObject json = default(JObject), bool isFirstTask = true)
+        private async Task<HttpResponseMessage> handleClientRequest(JObject json = default, bool isFirstTask = true)
         {
-            string url = string.Format("{0}{1}", options.ijson, isFirstTask ? this.name : string.Empty);
+            string url = string.Format("{0}{1}", options.ijson, isFirstTask ? name : string.Empty);
             HttpRequestMessage requestMessage = new HttpRequestMessage();
             requestMessage.Headers.Add("type", "worker");
             requestMessage.Method = HttpMethod.Post;
@@ -125,7 +128,7 @@ namespace cs_ijson_microservice
             if (json != null)
             {
                 requestMessage.Content = new StringContent(json.ToString(), System.Text.Encoding.UTF8, "application/json");
-                logsDriver.Write(LogsDriver.TYPE.Request, json);
+                logsDriver.Write(LogsDriver.TYPE.Response, json);
             }
             return await httpClient.SendAsync(requestMessage);
         }
@@ -133,12 +136,13 @@ namespace cs_ijson_microservice
         public void start()
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Microservices: {0} start", this.name);
+            Console.WriteLine("    Microservices: {0} start", name);
             Console.ResetColor();
-            httpClient = new HttpClient();
-            httpClient.Timeout = Timeout.InfiniteTimeSpan;
+            httpClient = new HttpClient
+            {
+                Timeout = Timeout.InfiniteTimeSpan
+            };
             MjRequest mjRequest = new MjRequest();
-            JObject responseJObj = new JObject();
             try
             {
                 mjRequest = HttpRequest(handleClientRequest().Result);
@@ -153,8 +157,8 @@ namespace cs_ijson_microservice
                 {
                     if (!mjRequest.isError)
                     {
-                        logsDriver.Write(LogsDriver.TYPE.Response, mjRequest.request);
-                        responseJObj = new JObject();
+                        logsDriver.Write(LogsDriver.TYPE.Request, mjRequest.request);
+                        JObject responseJObj = new JObject();
                         if (mjRequest.request.ContainsKey("id"))
                         {
                             responseJObj.Add("id", mjRequest.request.SelectToken("id"));
@@ -169,28 +173,28 @@ namespace cs_ijson_microservice
                             {
                                 param = (JObject)mjRequest.request.SelectToken("params");
                             }
-                            responseJObj.Add(this.worker(method, param));
+                            responseJObj.Add(worker(method, param));
                         }
                         mjRequest = HttpRequest(handleClientRequest(responseJObj, false).Result);
                     }
                     else
                     {
                         logsDriver.Write(LogsDriver.TYPE.Response, mjRequest.invalidJson);
-                        ResponseError responseError = new ResponseError("0", new ResponseError.Error(this.name, mjRequest.errorMessages));
+                        ResponseError responseError = new ResponseError("0", new ResponseError.Error(name, mjRequest.errorMessages));
                         mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    Console.WriteLine(" --- Exception: " + e);
+                    Console.WriteLine("    ERROR: " + e);
                     if (!mjRequest.isError)
                     {
                         string id = (string)mjRequest.request["id"];
-                        ResponseError responseError = new ResponseError(id, new ResponseError.Error(this.name, e.Message));
+                        ResponseError responseError = new ResponseError(id, new ResponseError.Error(name, e.Message));
                         mjRequest = HttpRequest(handleClientRequest(responseError.toJObject(), false).Result);
                     }
                 }
-                
+
             }
         }
     }
