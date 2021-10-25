@@ -17,11 +17,12 @@ namespace cs_ijson_microservice
             this.version = version;
             this.env = env;
             this.ijson = ijson.EndsWith("/") ? ijson : (ijson + "/");
+            this.requestTimeout = TimeSpan.FromMilliseconds(requestTimeout);
         }
         public string version { get; set; } = "1.0.0";
         public string env { get; set; } = "development";
         public string ijson { get; set; } = "http://localhost:8001";
-        public TimeSpan requestTimeout { get; set; } = TimeSpan.FromSeconds(60 * 5);
+        public TimeSpan requestTimeout { get; set; } = TimeSpan.FromMilliseconds(1000 * 15);
     }
 
 
