@@ -9,43 +9,49 @@ using System.Net.Http;
 namespace cs_ijson_microservice
 {
     public delegate JProperty Callback(string action, JObject param);
+
     public class Options
     {
         public Options() { }
+
         public Options(string version, string env, string ijson, int requestTimeout)
         {
-            this.version = version;
-            this.env = env;
-            this.ijson = ijson.EndsWith("/") ? ijson : (ijson + "/");
-            this.requestTimeout = TimeSpan.FromMilliseconds(requestTimeout);
+            Version = version;
+            Env = env;
+            Ijson = ijson.EndsWith("/") ? ijson : (ijson + "/");
+            RequestTimeout = TimeSpan.FromMilliseconds(requestTimeout);
         }
-        public string version { get; set; } = "1.0.0";
-        public string env { get; set; } = "development";
-        public string ijson { get; set; } = "http://localhost:8001";
-        public TimeSpan requestTimeout { get; set; } = TimeSpan.FromMilliseconds(1000 * 15);
+
+        public string Version { get; set; } = "1.0.0";
+
+        public string Env { get; set; } = "development";
+
+        public string Ijson { get; set; } = "http://localhost:8001";
+
+        public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromMilliseconds(1000 * 15);
     }
 
 
-    public class helpersExeption : Exception
+    public class HelpersExeption : Exception
     {
-        public helpersExeption(string message) : base(message) { }
+        public HelpersExeption(string message) : base(message) { }
     }
 
     public class Helpers
     {
-
         public class MjRequest
         {
-            public bool isError { get; set; } = false;
-            public JObject request { get; set; }
-            public string invalidJson { get; set; }
-            public string errorMessages { get; set; }
+            public bool IsError { get; set; } = false;
 
-            public MjRequest()
-            {
+            public JObject Request { get; set; }
 
-            }
+            public string InvalidJson { get; set; }
+
+            public string ErrorMessages { get; set; }
+
+            public MjRequest() { }
         }
+
         public static string ExpandSrv(string host)
         {
             if (!host.EndsWith(".srv"))
@@ -67,7 +73,7 @@ namespace cs_ijson_microservice
                     record.Target.Original;
                 return string.Format("{0}://{1}:{2}/", protocol, target, record.Port);
             }
-            throw new helpersExeption(query.ErrorMessage);
+            throw new HelpersExeption(query.ErrorMessage);
         }
 
         public static MjRequest HttpRequest(HttpResponseMessage httpResponseMessage)
@@ -76,90 +82,29 @@ namespace cs_ijson_microservice
             string content = httpResponseMessage.Content.ReadAsStringAsync().Result;
             try
             {
-                result.request = JObject.Parse(content);
+                result.Request = JObject.Parse(content);
             }
             catch (Exception e)
             {
-                result.isError = true;
-                result.errorMessages = e.Message;
-                result.invalidJson = content.Replace("\n", "").Replace("\r", "");
+                result.IsError = true;
+                result.ErrorMessages = e.Message;
+                result.InvalidJson = content.Replace("\n", "").Replace("\r", "");
             }
             return result;
         }
-
-        public class MySqlConfig
-        {
-            public MySqlConfig(string host, string port, string database, string user, string password)
-            {
-                Host = host;
-                Port = port;
-                Database = database;
-                User = user;
-                Password = password;
-            }
-            public MySqlConfig(JObject jObject)
-            {
-                if (jObject.ContainsKey("MysqlCredentials"))
-                {
-                    JObject mysqlCredentials = (JObject)jObject.SelectToken("MysqlCredentials[0]");
-                    Host = (string)mysqlCredentials["host"];
-                    Port = (string)mysqlCredentials["port"];
-                    Database = (string)mysqlCredentials["database"];
-                    User = (string)mysqlCredentials["user"];
-                    Password = (string)mysqlCredentials["password"];
-                }
-            }
-            public string Host;
-            public string Port;
-            public string Database;
-            public string User;
-            public string Password;
-            public string getStringConnection => string.Format("Server={0};Port={1};UserId={2};Password={3};Database={4};", Host, Port, User, Password, Database);
-        }
-
-        public class MicroserviceConfig
-        {
-            public MicroserviceConfig() { }
-            public MicroserviceConfig(MySqlConfig defaultMySql, string authAlias)
-            {
-                mysql = defaultMySql;
-                this.authAlias = authAlias;
-            }
-
-            public void addObject(JObject jObject)
-            {
-                if (jObject.ContainsKey("result"))
-                {
-                    JObject result = (JObject)jObject.SelectToken("result.model");
-                    mysql = new MySqlConfig(result);
-                    JObject services = (JObject)result["Services"][0];
-                    if (services.ContainsKey("alias"))
-                    {
-                        hasAuthorization = ((string)services["alias"] == authAlias) || hasAuthorization;
-                    }
-                }
-            }
-            public MySqlConfig mysql;
-            public bool hasAuthorization;
-            private readonly string authAlias;
-        }
-
     }
 
     public class LogsDriver
     {
-        public class TYPE
+        public class Type
         {
             public const string Response = "    <-- Response";
             public const string Request = "    --> Request";
             public const string Error = "    ERROR";
         }
-        private readonly string serviceName;
 
-        public LogsDriver(string serviceName)
-        {
-            this.serviceName = serviceName;
-        }
+        public LogsDriver() { }
+
         public void Write(string type, JObject jObject)
         {
             string id = "0";
@@ -170,9 +115,10 @@ namespace cs_ijson_microservice
 
             Console.WriteLine("{0} ({1}): {2}", type, id, JsonConvert.SerializeObject(jObject));
         }
+
         public void Write(string type, string errorMessages)
         {
-            if (type == TYPE.Error)
+            if (type == Type.Error)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
             }

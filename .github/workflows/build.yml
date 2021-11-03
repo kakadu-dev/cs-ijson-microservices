@@ -2,7 +2,7 @@
 
 on:
     push:
-        branches: [ master ]
+        branches: [ master, master_1.1.0 ]
 
 jobs:
     build:

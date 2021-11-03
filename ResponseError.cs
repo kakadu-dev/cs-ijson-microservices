@@ -15,6 +15,7 @@ namespace cs_ijson_microservice
         {
             public string service;
             public string message;
+
             public Error(string service, string message)
             {
                 this.service = service;
@@ -34,7 +35,7 @@ namespace cs_ijson_microservice
             this.error = error;
         }
 
-        public JObject toJObject()
+        public JObject ToJObject()
         {
             return JObject.FromObject(this);
         }
