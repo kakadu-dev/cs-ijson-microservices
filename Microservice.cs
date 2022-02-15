@@ -70,6 +70,14 @@ namespace cs_ijson_microservice
             try
             {
                 response = GetInstance.SendServiceRequest(method, data);
+
+                if (response.ContainsKey("error"))
+                {
+                    JObject error = (JObject)response.SelectToken("error");
+                    string message = (string)error.SelectToken("message");
+
+                    throw new Exception(message);
+                }
             }
             catch (AggregateException)
             {
