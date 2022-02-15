@@ -9,9 +9,11 @@ using System.Net.Http;
 namespace cs_ijson_microservice
 {
     public delegate JProperty Callback(string action, JObject param);
+
     public class Options
     {
         public Options() { }
+
         public Options(string version, string env, string ijson, int requestTimeout)
         {
             this.version = version;
@@ -19,12 +21,15 @@ namespace cs_ijson_microservice
             this.ijson = ijson.EndsWith("/") ? ijson : (ijson + "/");
             this.requestTimeout = TimeSpan.FromMilliseconds(requestTimeout);
         }
+
         public string version { get; set; } = "1.0.0";
+
         public string env { get; set; } = "development";
+
         public string ijson { get; set; } = "http://localhost:8001";
+
         public TimeSpan requestTimeout { get; set; } = TimeSpan.FromMilliseconds(1000 * 15);
     }
-
 
     public class helpersExeption : Exception
     {
@@ -33,12 +38,14 @@ namespace cs_ijson_microservice
 
     public class Helpers
     {
-
         public class MjRequest
         {
             public bool isError { get; set; } = false;
+
             public JObject request { get; set; }
+
             public string invalidJson { get; set; }
+
             public string errorMessages { get; set; }
 
             public MjRequest()
@@ -46,6 +53,7 @@ namespace cs_ijson_microservice
 
             }
         }
+
         public static string ExpandSrv(string host)
         {
             if (!host.EndsWith(".srv"))
@@ -120,6 +128,7 @@ namespace cs_ijson_microservice
         public class MicroserviceConfig
         {
             public MicroserviceConfig() { }
+
             public MicroserviceConfig(MySqlConfig defaultMySql, string authAlias)
             {
                 mysql = defaultMySql;
@@ -139,6 +148,7 @@ namespace cs_ijson_microservice
                     }
                 }
             }
+
             public MySqlConfig mysql;
             public bool hasAuthorization;
             private readonly string authAlias;
@@ -154,12 +164,14 @@ namespace cs_ijson_microservice
             public const string Request = "    --> Request";
             public const string Error = "    ERROR";
         }
+
         private readonly string serviceName;
 
         public LogsDriver(string serviceName)
         {
             this.serviceName = serviceName;
         }
+
         public void Write(string type, JObject jObject)
         {
             string id = "0";
@@ -170,6 +182,7 @@ namespace cs_ijson_microservice
 
             Console.WriteLine("{0} ({1}): {2}", type, id, JsonConvert.SerializeObject(jObject));
         }
+
         public void Write(string type, string errorMessages)
         {
             if (type == TYPE.Error)
